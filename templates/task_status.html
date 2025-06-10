@@ -10,7 +10,11 @@
         <!-- Processing View: Shown while the pipeline is running -->
         <div id="processing-view" class="status-box">
             <h1>Processing Your Video</h1>
-            <div class="loader"></div>
+            <!-- Progress Bar -->
+            <div class="progress" style="width: 300px; margin: 2em auto 1em auto; height: 32px; background: #e9ecef; border-radius: 16px; overflow: hidden;">
+                <div id="progress-bar" class="progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #3498db, #007bff); transition: width 0.5s;"></div>
+            </div>
+            <p id="progress-label" style="font-weight: 600; color: #1a3a5a; margin-bottom: 0.5em;"></p>
             <p id="status-message">Please wait, the pipeline is initializing...</p>
         </div>
 
@@ -42,11 +46,42 @@
         const resultsView = document.getElementById('results-view');
         const statusMessage = document.getElementById('status-message');
 
+        // Progress bar stages (keep in sync with backend/app.py status messages)
+        const STAGES = [
+            { key: 'Extracting audio', label: 'Extracting audio...' },
+            { key: 'Transcribing audio', label: 'Transcribing audio...' },
+            { key: 'Formatting transcript', label: 'Formatting transcript...' },
+            { key: 'Identifying key events', label: 'Identifying key events...' },
+            { key: 'Creating highlight clips', label: 'Creating highlight clips...' },
+            { key: 'Stitching final summary', label: 'Stitching final summary...' },
+            { key: 'Complete', label: 'Complete!' }
+        ];
+
+        function updateProgressBar(statusText) {
+            let progress = 0;
+            let label = '';
+            for (let i = 0; i < STAGES.length; i++) {
+                if (statusText.startsWith(STAGES[i].key)) {
+                    progress = (i + 1) / STAGES.length * 100;
+                    label = STAGES[i].label;
+                    break;
+                }
+            }
+            // If error, set progress to 100 and label to error
+            if (statusText.startsWith('Error:')) {
+                progress = 100;
+                label = 'Error';
+            }
+            document.getElementById('progress-bar').style.width = progress + '%';
+            document.getElementById('progress-label').textContent = label;
+        }
+
         function checkStatus() {
             fetch(`/task/${taskId}/status`)
                 .then(response => response.json())
                 .then(data => {
                     statusMessage.textContent = data.status;
+                    updateProgressBar(data.status);
 
                     if (data.status.startsWith("Complete")) {
                         // Pipeline is finished, show results!

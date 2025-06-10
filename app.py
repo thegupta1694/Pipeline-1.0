@@ -8,14 +8,7 @@ import logging
 from flask import Flask, request, render_template, redirect, url_for, flash, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 
-from pipeline import (
-    extract_audio, 
-    transcribe_audio, 
-    format_transcript_with_timestamps,
-    extract_events_with_llm, 
-    create_clips_from_events, 
-    stitch_clips
-)
+from pipeline import run_pipeline
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
@@ -34,49 +27,26 @@ def update_status(task_dir, status, summary_path=None):
     with open(os.path.join(task_dir, 'status.json'), 'w') as f:
         json.dump(status_data, f)
 
-def run_pipeline(task_id, video_path):
-    # This entire function is UNCHANGED. It's already perfect.
+def process_with_pipeline(task_id, video_path):
+    """Wrapper function to run the pipeline with status updates."""
     task_dir = os.path.dirname(video_path)
-    logging.info(f"[{task_id}] Pipeline started.")
-    update_status(task_dir, "Extracting audio...")
-    audio_path = extract_audio(video_path, task_id)
-    if not audio_path:
-        update_status(task_dir, "Error: Audio extraction failed.")
+    try:
+        logging.info(f"[{task_id}] Pipeline started.")
+        
+        # Call the caching-enabled pipeline
+        update_status(task_dir, "Checking for cached results...")
+        results = run_pipeline(video_path, task_id)
+
+        if not results.get('summary_path'):
+            update_status(task_dir, "Error: Pipeline failed to produce summary video.")
+            return
+
+        update_status(task_dir, "Complete", results['summary_path'])
+        logging.info(f"[{task_id}] Pipeline finished successfully.")
+    except Exception as e:
+        logging.error(f"[{task_id}] Pipeline error: {str(e)}")
+        update_status(task_dir, f"Error: {str(e)}")
         return
-    update_status(task_dir, "Transcribing audio (using 'small' model)...")
-    _, json_path = transcribe_audio(audio_path, task_id)
-    if not json_path:
-        update_status(task_dir, "Error: Transcription failed.")
-        return
-    update_status(task_dir, "Formatting transcript for analysis...")
-    formatted_transcript = format_transcript_with_timestamps(json_path)
-    if not formatted_transcript:
-        update_status(task_dir, "Error: Failed to format transcript.")
-        return
-    update_status(task_dir, "Identifying key events with AI...")
-    events = extract_events_with_llm(formatted_transcript, task_id)
-    if events is None:
-        update_status(task_dir, "Error: AI event extraction failed.")
-        return
-    events_path = os.path.join(task_dir, "events.json")
-    with open(events_path, 'w', encoding='utf-8') as f:
-        json.dump(events, f, indent=2)
-    update_status(task_dir, "Creating highlight clips...")
-    clip_paths = create_clips_from_events(events_path, video_path, task_id)
-    if clip_paths is None:
-        update_status(task_dir, "Error: Clip creation failed.")
-        return
-    if not clip_paths:
-        update_status(task_dir, "Complete: No highlight events were found to create a summary.")
-        logging.info(f"[{task_id}] Pipeline finished: No events to process.")
-        return 
-    update_status(task_dir, "Stitching final summary...")
-    summary_path = stitch_clips(clip_paths, task_id)
-    if not summary_path:
-        update_status(task_dir, "Error: Video stitching failed.")
-        return
-    update_status(task_dir, "Complete", summary_path)
-    logging.info(f"[{task_id}] Pipeline finished successfully.")
 
 
 # --- FLASK ROUTES ---
@@ -100,7 +70,7 @@ def upload_file():
         os.makedirs(task_dir, exist_ok=True)
         video_path = os.path.join(task_dir, original_filename)
         file.save(video_path)
-        pipeline_thread = threading.Thread(target=run_pipeline, args=(task_id, video_path))
+        pipeline_thread = threading.Thread(target=process_with_pipeline, args=(task_id, video_path))
         pipeline_thread.start()
         return redirect(url_for('task_status', task_id=task_id))
     else:
