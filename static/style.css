@@ -1,0 +1,146 @@
+/* General Body & Typography */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f4f7f9;
+    color: #333;
+    margin: 0;
+    padding: 2em;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 2em;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    color: #1a3a5a;
+    border-bottom: 2px solid #e1e8ed;
+    padding-bottom: 0.3em;
+}
+
+/* Form Styles */
+.upload-form .form-group {
+    margin-bottom: 1.5em;
+}
+.upload-form label {
+    display: block;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+}
+.upload-form input[type="file"] {
+    padding: 0.7em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 95%;
+}
+.upload-form input[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 0.9em;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 1.1em;
+    transition: background-color 0.3s;
+}
+.upload-form input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* Status & Loader */
+.status-box {
+    text-align: center;
+}
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1.5s linear infinite;
+    margin: 2em auto;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+#status-message {
+    font-size: 1.2em;
+    color: #555;
+}
+
+/* Results View Layout */
+#results-view {
+    display: none; /* Hidden by default */
+}
+.results-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2em;
+    margin-top: 2em;
+}
+.video-container video {
+    width: 100%;
+    border-radius: 8px;
+    background: #000;
+}
+.download-btn {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    padding: 0.8em 1.5em;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 1em;
+    font-size: 1em;
+    transition: background-color 0.3s;
+}
+.download-btn:hover {
+    background-color: #218838;
+}
+
+/* Events List */
+.events-container ul {
+    list-style: none;
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.events-container li {
+    padding: 0.8em;
+    border-bottom: 1px solid #eee;
+}
+.events-container li:last-child {
+    border-bottom: none;
+}
+.event-type {
+    font-weight: bold;
+    color: #0056b3;
+    display: block;
+    margin-bottom: 0.3em;
+}
+
+/* Transcript View */
+.transcript-container {
+    margin-top: 2em;
+}
+.transcript-container pre {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 1em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.error {
+    color: #dc3545;
+    font-weight: bold;
+}

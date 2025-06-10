@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Processing Video</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Processing View: Shown while the pipeline is running -->
+        <div id="processing-view" class="status-box">
+            <h1>Processing Your Video</h1>
+            <div class="loader"></div>
+            <p id="status-message">Please wait, the pipeline is initializing...</p>
+        </div>
+
+        <!-- Results View: Shown when the pipeline is complete -->
+        <div id="results-view">
+            <h1 id="results-title">Summary Video</h1>
+            <div class="results-grid">
+                <div class="video-container">
+                    <video id="summary-video" controls autoplay muted playsinline></video>
+                    <a id="download-link" class="download-btn" href="#" download>Download Full Summary</a>
+                </div>
+                <div class="events-container">
+                    <h2>Detected Events</h2>
+                    <ul id="events-list">
+                        <!-- Events will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+            <div class="transcript-container">
+                <h2>Full Transcript</h2>
+                <pre id="transcript-text">Loading transcript...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const taskId = "{{ task_id }}";
+        const processingView = document.getElementById('processing-view');
+        const resultsView = document.getElementById('results-view');
+        const statusMessage = document.getElementById('status-message');
+
+        function checkStatus() {
+            fetch(`/task/${taskId}/status`)
+                .then(response => response.json())
+                .then(data => {
+                    statusMessage.textContent = data.status;
+
+                    if (data.status.startsWith("Complete")) {
+                        // Pipeline is finished, show results!
+                        processingView.style.display = 'none';
+                        resultsView.style.display = 'block';
+                        document.title = "Summary Ready!";
+                        
+                        if (data.summary_filename) {
+                            // A video was generated
+                            document.getElementById('results-title').textContent = "Your Highlight Reel is Ready!";
+                            const videoPlayer = document.getElementById('summary-video');
+                            const downloadLink = document.getElementById('download-link');
+                            
+                            videoPlayer.src = `/stream/${taskId}/${data.summary_filename}`;
+                            downloadLink.href = videoPlayer.src;
+                            downloadLink.download = data.summary_filename;
+                            
+                            fetchAndDisplayEvents();
+                        } else {
+                            // Case where no events were found
+                             document.querySelector('.results-grid').innerHTML = `<h2>${data.status}</h2>`;
+                        }
+                        
+                        fetchAndDisplayTranscript();
+                        return; // Stop polling
+                    }
+
+                    if (data.status.startsWith("Error:")) {
+                        document.querySelector('.loader').style.display = 'none';
+                        statusMessage.classList.add('error');
+                        return; // Stop polling on error
+                    }
+                    
+                    setTimeout(checkStatus, 3000);
+                });
+        }
+
+        function fetchAndDisplayEvents() {
+            const eventsList = document.getElementById('events-list');
+            fetch(`/task/${taskId}/events`)
+                .then(response => response.json())
+                .then(events => {
+                    if (events.length === 0) {
+                        eventsList.innerHTML = '<li>No specific events were detected.</li>';
+                        return;
+                    }
+                    events.forEach(event => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span class="event-type">${event.event_type} (${event.start_timestamp})</span>${event.description}`;
+                        eventsList.appendChild(li);
+                    });
+                });
+        }
+
+        function fetchAndDisplayTranscript() {
+            const transcriptText = document.getElementById('transcript-text');
+            fetch(`/task/${taskId}/transcript`)
+                .then(response => response.text())
+                .then(text => {
+                    transcriptText.textContent = text || "Transcript could not be loaded.";
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', checkStatus);
+    </script>
+</body>
+</html>

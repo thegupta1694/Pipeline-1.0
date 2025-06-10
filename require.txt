@@ -1,0 +1,5 @@
+Flask
+google-generativeai
+
+# Note: openai-whisper is installed locally in editable mode via:
+# pip install -e /path/to/your/whisper/clone

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Summarizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Video Summarizer</h1>
+        <p>Upload a sports video (e.g., MP4) and our AI pipeline will generate a highlight reel of the key moments.</p>
+        
+        <form class="upload-form" method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Choose video file:</label>
+                <input type="file" name="file" id="file" required>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Upload and Process">
+            </div>
+        </form>
+    </div>
+</body>
+</html>
